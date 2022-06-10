@@ -17,16 +17,16 @@ public class App {
         menu = LoginMenu.getInstance();
         do {
             menu.show();
-            Game.getInstance().showBoard();
+            // Game.getInstance().showBoard();
         } while (true);
     }
 
     public static String getNextLine() {
         if ((input = scanner.nextLine().trim()).equals("exit"))
             end();
-        pw.println();
-        pw.println(input);
-        pw.println();
+        // pw.println();
+        // pw.println(input);
+        // pw.println();
         return input;
     }
 
@@ -40,8 +40,20 @@ public class App {
     }
 
     private static void end() {
-        System.out.println("program ended");
+        App.print("program ended");
         pw.close();
         System.exit(0);
     }
+}
+
+enum Color {
+    BLACK, WHITE;
+
+    @Override
+    public String toString() {
+        if (this == WHITE)
+            return "w";
+        return "b";
+    }
+
 }

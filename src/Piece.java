@@ -11,18 +11,16 @@ public abstract class Piece {
         this.icon = icon;
     }
 
-    public String moveTo(int x, int y) {
+    public boolean moveTo(int x, int y) {
         if (valid(x, y)) {
             Game.getInstance().setPiece(this.x, this.y, null);
-            boolean b = Game.getInstance().setPiece(x, y, this);
+            Game.getInstance().setPiece(x, y, this);
             this.x = x;
             this.y = y;
             moves++;
-            if (b)
-                return "rival piece destroyed";
-            return "moved";
+            return true;
         }
-        return "cannot move to the spot";
+        return false;
     }
 
     protected abstract boolean valid(int x2, int y2);

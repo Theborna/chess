@@ -1,28 +1,31 @@
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
 public class Game {
     private static Game instance;
     private User WhitePlayer, BlackPlayer;
     private User turn;
-    private Piece selectedPiece = null;
-    private boolean moved = false;
-    private Piece[][] pieces = new Piece[8][8];
-    private List<String> killsLog, movesLog;
+    private Piece selectedPiece;
+    private boolean moved;
+    private Piece[][] pieces;
     private static final int INDEFINITE = 0;
     private int totalMoves;
     private int moves;
+    private Move nextMove;
+    private boolean ended;
+    private Integer undoWhite, undoBlack;
 
     private Game() {
         turn = WhitePlayer;
         initialize();
     }
 
-    private void initialize() {
+    public void initialize() {
+        ended = false;
+        moved = false;
+        selectedPiece = null;
+        Move.clear();
         moves = 0;
-        killsLog = new ArrayList<String>();
-        movesLog = new ArrayList<String>();
+        undoBlack = 2;
+        undoWhite = 2;
+        pieces = new Piece[8][8];
         for (int i = 0; i < 8; i++) {
             pieces[i][1] = new Pawn(i, 1, Color.WHITE);
             pieces[i][6] = new Pawn(i, 6, Color.BLACK);
@@ -130,22 +133,20 @@ public class Game {
     public void move(int x, int y) {
         x--;
         y--;
-        String move;
         if (!validMovement(x, y).equals("valid")) {
             App.print(validMovement(x, y));
         } else {
-            String log;
-            Piece last = pieces[x][y];
-            System.out.println(last + "...................");
-            log = selectedPiece.toString() + " " + selectedPiece.x + "," + selectedPiece.y + " to " + x + "," + y;
-            App.print(move = selectedPiece.moveTo(x, y));// moves the piece and outputs the result
-            if (move.equals("cannot move to the spot"))
-                return;
-            if (move.equals("rival piece destroyed"))
-                log += " destroyed " + last.toString();
-            movesLog.add(log);
+            nextMove = new Move(x, y, selectedPiece, pieces[x][y]);
+            if (selectedPiece.moveTo(x, y)) {
+                if (nextMove.hit)
+                    App.print("rival piece destroyed");
+                else
+                    App.print("moved");
+            } else
+                App.print("cannot move to the spot");
             moved = true;
         }
+
     }
 
     public String validMovement(int x, int y) {
@@ -158,19 +159,23 @@ public class Game {
         return "valid";
     }
 
-    public boolean setPiece(int x, int y, Piece piece) {
-        boolean hit = (pieces[x][y] != null) ? true : false;
-        if (hit)
-            killsLog.add(pieces[x][y].toString() + " killed in spot " + x + "," + y);
+    public void setPiece(int x, int y, Piece piece) {
+        if (nextMove.hitKing)
+            ended = true;
         pieces[x][y] = piece;
-        return hit;
     }
 
     public void nextTurn() {
+        if (ended) {
+            App.print("turn completed");
+            endGame(turn, getTurn());
+            return;
+        }
         if (!moved) {
             App.print("you must move then proceed to next turn");
             return;
         }
+        moves++;
         moved = false;
         if (turn == WhitePlayer)
             turn = BlackPlayer;
@@ -184,14 +189,14 @@ public class Game {
     }
 
     public void showKills(boolean all) {
-        for (String string : killsLog) {
+        for (String string : Move.getKills()) {
             if (all || ((string.toCharArray()[1] == 'w') == (getTurn() == Color.WHITE)))
                 App.print(string);
         }
     }
 
     public void showMoves(boolean all) {
-        for (String string : movesLog) {
+        for (String string : Move.getMoves()) {
             if (all || ((string.toCharArray()[1] == 'w') == (getTurn() == Color.WHITE)))
                 App.print(string);
         }
@@ -200,4 +205,18 @@ public class Game {
     public Piece[][] getPieces() {
         return pieces;
     }
+
+    public void endGame(User winner, Color color) {
+        App.print("player " + winner.getUsername() + " with color " + ((color == Color.WHITE) ? "white" : "black")
+                + " won");
+        this.initialize();
+        App.changeRoot(MainMenu.getInstance());
+    }
+
+    public void forfeit() {
+        App.print("you have forfeited");
+        endGame(turn.equals(WhitePlayer) ? BlackPlayer : WhitePlayer,
+                (getTurn() == Color.BLACK) ? Color.WHITE : Color.BLACK);
+    }
+
 }

@@ -16,6 +16,10 @@ public class GameMenu implements Menu {
 
     @Override
     public void show() {
+        if (Game.getInstance().reachedLimit()) {
+            draw();
+            return;
+        }
         String input = App.getNextLine();
         if ((matcher = AppRegex.SELECT.getMatcher(input)) != null) {
             Game.getInstance().select(Integer.parseInt(matcher.group("y")), Integer.parseInt(matcher.group("x")));
@@ -44,13 +48,10 @@ public class GameMenu implements Menu {
         } else if (AppRegex.HELP.matches(input)) {
             help();
         } else if (AppRegex.FORFEIT.matches(input)) {
-            forfeit();
+            Game.getInstance().forfeit();
         } else {
             App.print("invalid command");
         }
-    }
-
-    private void forfeit() {
     }
 
     private void help() {
@@ -72,6 +73,12 @@ public class GameMenu implements Menu {
     }
 
     private void undo() {
+    }
+
+    private void draw() {
+        App.print("draw");
+        Game.getInstance().initialize();
+        App.changeRoot(MainMenu.getInstance());
     }
 
 }
