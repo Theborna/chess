@@ -3,8 +3,8 @@ public class Game {
     private User WhitePlayer, BlackPlayer;
     private User turn;
     private Piece selectedPiece;
-    private boolean moved;
-    private Piece[][] pieces;
+    private boolean moved, undone;
+    private Piece[][] pieces, copy;
     private static final int INDEFINITE = 0;
     private int totalMoves;
     private int moves;
@@ -26,6 +26,7 @@ public class Game {
         undoBlack = 2;
         undoWhite = 2;
         pieces = new Piece[8][8];
+        copy = new Piece[8][8];
         for (int i = 0; i < 8; i++) {
             pieces[i][1] = new Pawn(i, 1, Color.WHITE);
             pieces[i][6] = new Pawn(i, 6, Color.BLACK);
@@ -48,6 +49,12 @@ public class Game {
         pieces[5][7] = new Bishop(5, 7, Color.BLACK);
         pieces[3][7] = new Queen(3, 7, Color.BLACK);
         pieces[4][7] = new King(4, 7, Color.BLACK);
+    }
+
+    private void copy(Piece[][] first, Piece[][] second) {
+        for (int i = 0; i < first.length; i++)
+            for (int j = 0; j < first[i].length; j++)
+                second[i][j] = first[i][j];
     }
 
     public static Game getInstance() {
@@ -136,15 +143,18 @@ public class Game {
         if (!validMovement(x, y).equals("valid")) {
             App.print(validMovement(x, y));
         } else {
+            copy(pieces, copy);
             nextMove = new Move(x, y, selectedPiece, pieces[x][y]);
             if (selectedPiece.moveTo(x, y)) {
                 if (nextMove.hit)
                     App.print("rival piece destroyed");
                 else
                     App.print("moved");
-            } else
+                moved = true;
+            } else {
                 App.print("cannot move to the spot");
-            moved = true;
+                Move.removeLast();
+            }
         }
 
     }
@@ -155,7 +165,7 @@ public class Game {
         if (x < 0 || y < 0 || x >= 8 || y >= 8)
             return "wrong coordination";
         if (selectedPiece == null)
-            return " do not have any selected piece";
+            return "do not have any selected piece";
         return "valid";
     }
 
@@ -177,11 +187,14 @@ public class Game {
         }
         moves++;
         moved = false;
+        undone = false;
         if (turn == WhitePlayer)
             turn = BlackPlayer;
         else
             turn = WhitePlayer;
         App.print("turn completed");
+        // deselect piece
+        selectedPiece = null;
     }
 
     public void showTurn() {
@@ -209,14 +222,59 @@ public class Game {
     public void endGame(User winner, Color color) {
         App.print("player " + winner.getUsername() + " with color " + ((color == Color.WHITE) ? "white" : "black")
                 + " won");
+        winner.win(1);
+        winner.score(3);
+        User other = winner.equals(WhitePlayer) ? BlackPlayer : WhitePlayer;
+        other.win(-1);
+        other.score(0);
         this.initialize();
         App.changeRoot(MainMenu.getInstance());
     }
 
     public void forfeit() {
         App.print("you have forfeited");
-        endGame(turn.equals(WhitePlayer) ? BlackPlayer : WhitePlayer,
-                (getTurn() == Color.BLACK) ? Color.WHITE : Color.BLACK);
+        User other = turn.equals(WhitePlayer) ? BlackPlayer : WhitePlayer;
+        turn.score(-1);
+        other.score(-1);
+        endGame(other, (getTurn() == Color.BLACK) ? Color.WHITE : Color.BLACK);
     }
 
+    public void showUndo() {
+        App.print("you have " + currentUndo() + " undo moves");
+    }
+
+    private Integer currentUndo() {
+        return (turn.equals(WhitePlayer)) ? undoWhite : undoBlack;
+    }
+
+    private void decreaseUndo() {
+        undone = true;
+        moved = false;
+        copy(copy, pieces);
+        selectedPiece.goBack();
+        Move.removeLast();
+        App.print("undo completed");
+        if (turn.equals(WhitePlayer))
+            undoWhite--;
+        else
+            undoBlack--;
+    }
+
+    public void undo() {
+        String check = validUndo();
+        if (!check.equals("valid")) {
+            App.print(check);
+        } else
+            decreaseUndo();
+    }
+
+    private String validUndo() {
+        if (moved == false)
+            return "you must move before undo";
+        if (currentUndo() <= 0)
+            return "you cannot undo anymore";
+        if (undone)
+            return "you have used your undo for this turn";
+        return "valid";
+    }
 }

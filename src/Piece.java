@@ -1,5 +1,5 @@
 public abstract class Piece {
-    protected int x, y;
+    protected int x, y, lastX, lastY;
     protected Color color;
     private String icon;
     protected int moves;
@@ -15,12 +15,20 @@ public abstract class Piece {
         if (valid(x, y)) {
             Game.getInstance().setPiece(this.x, this.y, null);
             Game.getInstance().setPiece(x, y, this);
+            lastX = this.x;
+            lastY = this.y;
             this.x = x;
             this.y = y;
             moves++;
             return true;
         }
         return false;
+    }
+
+    public void goBack() {
+        x = lastX;
+        y = lastY;
+        moves--;
     }
 
     protected abstract boolean valid(int x2, int y2);
@@ -37,7 +45,7 @@ public abstract class Piece {
     }
 
     protected Piece rayHit(int dx, int dy) {
-        for (int i = x, j = y; (i < 8 && i > 0) && (j < 8 && j > 0); i += dx, j += dy)
+        for (int i = x, j = y; (i < 8 && i >= 0) && (j < 8 && j >= 0); i += dx, j += dy)
             if (Game.getInstance().getPieces()[i][j] != null && Game.getInstance().getPieces()[i][j] != this)
                 return Game.getInstance().getPieces()[i][j];
         return null;
@@ -46,12 +54,14 @@ public abstract class Piece {
     protected boolean isWithinRay(int dx, int dy, int x2, int y2) {
         if (dy * (x2 - x) != dx * (y2 - y))
             return false;
-        if (rayHit(dx, dy) == null)
-            return true;
+        if ((x == 0 && dx < 0) || (y == 0 && dy < 0) || (x == 7 && dx > 0) || (y == 7 && dy > 0))
+            return false;
         Piece hit = rayHit(dx, dy);
+        if (hit == null)
+            return true;
         if (x2 == hit.x && y2 == hit.y)
             return hit.getColor() != color;
-        return (hit.x - x2) * (x - x2) < 0;
+        return ((hit.x - x2) * (x - x2) < 0) || ((hit.y - y2) * (y - y2) < 0);
     }
 
     @Override

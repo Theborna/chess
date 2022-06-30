@@ -1,16 +1,32 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.jws.soap.SOAPBinding.Use;
+
 public class User {
     private static Set<User> users = new HashSet<User>();
     private String username, password;
-    private Integer score, wins, draws, loses;
+    private int score, wins, draws, loses;
 
     public User(String username, String password) {
         this.username = username;
         this.password = password;
+    }
+
+    public void score(int score) {
+        this.score += score;
+    }
+
+    public void win(int wins) {
+        if (wins < 0)
+            loses++;
+        else if (wins == 0)
+            draws++;
+        else
+            this.wins++;
     }
 
     public boolean add() {
@@ -46,7 +62,9 @@ public class User {
         ArrayList<User> userList = new ArrayList<User>();
         userList.addAll(users);
         userList.sort(Comparator.comparing(User::getScore).thenComparing(User::getWins).thenComparing(User::getDraws)
-                .thenComparing((i, j) -> j.loses - i.loses));
+                .thenComparing(Comparator.comparing(User::getLoses).reversed())
+                .thenComparing(Comparator.comparing(User::getUsername).reversed()));
+        Collections.reverse(userList);
         userList.forEach(i -> App
                 .print(i.username + " " + i.getScore() + " " + i.getWins() + " " + i.getDraws() + " " + i.getLoses()));
     }

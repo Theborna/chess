@@ -61,7 +61,7 @@ public class MainMenu implements Menu {
 
     private String validate(String username, int limit) {
         if (!username.matches("\\w+"))
-            return "invalid username format";
+            return "username format is invalid";
         if (limit < 0)
             return "number should be positive to have a limit or 0 for no limit";
         if (username.equals(LoginMenu.getInstance().getUser().getUsername()))
